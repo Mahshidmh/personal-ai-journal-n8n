@@ -1,2 +1,3 @@
 # ai-systems-journey
 just getting started...
+the goal is to keep showing up and create the big project and also learn within creating.
