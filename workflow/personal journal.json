@@ -1,0 +1,745 @@
+{
+  "name": "personal journal",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 23,
+              "triggerAtMinute": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        -96
+      ],
+      "id": "e00c2333-e024-48bb-9810-51d064b214af",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/journals/incoming/*.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -96
+      ],
+      "id": "f471bc2f-9403-45ac-9d25-805538487fa2",
+      "name": "Read Files from Disk",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1904,
+        0
+      ],
+      "id": "fe0cbb2e-44f9-44cf-96ad-28d84ca7a957",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "model": "mistral:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        240
+      ],
+      "id": "41ef2a52-2396-4c49-8ebe-20cacd5c394e",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "1vzYF9j2GYZhOTx6",
+          "name": "Ollama account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the emotional content of this journal entry.\n\nJournal:\n{{ $('extract text').item.json.text }}\n\nIdentify:\n1. Overall sentiment (positive, negative, neutral, or mixed)\n2. Primary emotions\n3. Emotional intensity from 1 to 10\n4. Brief explanation based on the text\n\nReturn the result in valid JSON only:\n\n{\n  \"sentiment\": \"\",\n  \"emotions\": [],\n  \"intensity\": 0,\n  \"explanation\": \"\"\n}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1232,
+        80
+      ],
+      "id": "fd0a6b78-dbda-4038-8ba0-c5edc92bf9be",
+      "name": "Sentiment Tracker LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "mistral:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -144
+      ],
+      "id": "f8810e9c-6fdf-46e6-8568-eef0d32edcb0",
+      "name": "Ollama Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "1vzYF9j2GYZhOTx6",
+          "name": "Ollama account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a thoughtful, warm, and honest journaling companion.\n\nRespond directly to the person who wrote the journal entry, as if you are having a meaningful conversation with them. Speak in second person (\"you\"), not in third person. Never describe the writer as \"the user\", \"Mahshid\", or \"the person\".\n\nUse the journal entry and sentiment analysis to understand their emotional state and situation.\n\nDo not summarize the journal entry or produce a clinical analysis. Instead, respond naturally like a thoughtful friend who has carefully listened.\n\nYour response should:\n- Acknowledge something specific from what they wrote\n- Offer a meaningful perspective or insight when appropriate\n- Point out patterns or contradictions gently\n- Encourage reflection without sounding generic or overly motivational\n- Ask one thoughtful question when it would help them reflect further\n\nBe warm, natural, and conversational, but honest. Do not exaggerate positivity or give empty reassurance. Do not make psychological or medical diagnoses.\n\nJournal entry:\n{{ $('extract text').item.json.text }}\n\nSentiment analysis:\n{{ $json.text }}\n\nWrite one concise, natural response directly to the journal writer.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1552,
+        -304
+      ],
+      "id": "7f18cbbc-fd5f-43a5-8c6d-8afbff648b09",
+      "name": "Reflection"
+    },
+    {
+      "parameters": {
+        "chatId": "778664176",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        -432
+      ],
+      "id": "965eba9c-25a5-4472-bae4-006fbc0a5472",
+      "name": "Send it to Me.",
+      "webhookId": "666bb280-4a8f-4f9b-9611-3e576f428373",
+      "credentials": {
+        "telegramApi": {
+          "id": "see7hZOzvVSTU706",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sentiment = JSON.parse($json.text);\n\nreturn [\n  {\n    json: sentiment\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        192
+      ],
+      "id": "64b66486-bb45-436e-800f-cf3154e211ba",
+      "name": "fix the struc"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "journal_entries",
+          "mode": "list",
+          "cachedResultName": "journal_entries"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "intensity": "={{ $json.intensity }}",
+            "explanation": "={{ $json.explanation }}",
+            "emotions": "={{ $json.emotions }}",
+            "sentiment": "={{ $json.sentiment }}",
+            "journal_text": "={{ $('extract text').item.json.text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "journal_text",
+              "displayName": "journal_text",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentiment",
+              "displayName": "sentiment",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intensity",
+              "displayName": "intensity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "explanation",
+              "displayName": "explanation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "emotions",
+              "displayName": "emotions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2064,
+        64
+      ],
+      "id": "7b43c178-e9f8-494c-9133-0f059106b88a",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "p9zleNqGXTUzCe0b",
+          "name": "Postgres journal tracker"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0e4971c7-e490-4d74-bbed-83c728dba20e",
+              "leftValue": "={{ $json.already_processed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        -16
+      ],
+      "id": "eaad421e-8e17-46c4-a28c-0652af24f335",
+      "name": "If not proccesed?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "190e2fec-4860-4d5f-8dca-349e043e8cbe",
+              "name": "Original filename",
+              "value": "={{ $('Merge text and file name').item.json.fileName }}",
+              "type": "string"
+            },
+            {
+              "id": "dd3e804e-80c0-4308-ada4-2a8e2c5ca5a3",
+              "name": "Original journal",
+              "value": "={{ $('Merge text and file name').item.json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "65d8b91c-031d-4908-b7fb-a3574eaf75fc",
+              "name": "Sentiment",
+              "value": "={{ $json.sentiment }}",
+              "type": "string"
+            },
+            {
+              "id": "011e2d99-5774-4c92-b991-8e6f725c1908",
+              "name": "Intensity",
+              "value": "={{ $json.intensity }}",
+              "type": "number"
+            },
+            {
+              "id": "36d4f890-2eb9-4447-84d7-41271355ec5a",
+              "name": "emotions",
+              "value": "={{ $json.emotions }}",
+              "type": "array"
+            },
+            {
+              "id": "b8d7ef36-f064-4cdc-8743-6c55e43d1157",
+              "name": "explanation",
+              "value": "={{ $json.explanation }}",
+              "type": "string"
+            },
+            {
+              "id": "ace217c4-fbdd-4b14-ad76-eecb9183390d",
+              "name": "respond",
+              "value": "={{ $('Reflection').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2400,
+        48
+      ],
+      "id": "ef4ba55d-5d2d-43ff-848f-79562c86effa",
+      "name": "prepare archive"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "archiveText",
+        "binaryPropertyName": "=data",
+        "options": {
+          "encoding": "utf8",
+          "fileName": "={{ $('prepare archive').item.json['Original filename'] }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2960,
+        16
+      ],
+      "id": "24606fa4-5d61-476f-839a-ff05bcc1b02a",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/journals/processed/{{ $('prepare archive').item.json['Original filename'] }}",
+        "options": {
+          "append": false
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        3232,
+        -16
+      ],
+      "id": "f6602e8d-b98f-49a8-a0bc-cc25e47714a1",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8e4ba0bd-a36d-44e0-8625-5afcba5d3ce2",
+              "name": "archiveText",
+              "value": "={{\n`JOURNAL ENTRY\n========================================\n\nFilename: ${$('Merge text and file name').item.json.fileName}\n\nORIGINAL JOURNAL\n----------------------------------------\n${$('Merge text and file name').item.json.text}\n\nSENTIMENT ANALYSIS\n----------------------------------------\nSentiment: ${$json.Sentiment}\nEmotions: ${JSON.stringify($json.emotions)}\nIntensity: ${$json.Intensity}/10\n\nExplanation:\n${$json.explanation}\n\nAI REFLECTION\n----------------------------------------\n${$('Reflection').item.json.text}\n\n========================================\n`\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2656,
+        32
+      ],
+      "id": "3a1d0ede-ae9a-4257-b2a5-47ee27c7051a",
+      "name": "format archive"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "94d6af44-35a6-422b-86d6-0327e402b93a",
+              "name": "fileName",
+              "value": "={{ $('Read Files from Disk').item.binary.data.fileName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        -80
+      ],
+      "id": "63ad76bc-1931-4ef0-9064-ce74481b7a41",
+      "name": "binary name"
+    },
+    {
+      "parameters": {
+        "jsCode": "const files = $input.all();\n\nconst validFiles = files.filter(item => {\n  const name = item.json.fileName;\n  return /^\\d{4}-\\d{2}-\\d{2}\\.txt$/.test(name);\n});\n\nif (validFiles.length === 0) {\n  throw new Error('No valid journal files found.');\n}\n\nvalidFiles.sort((a, b) => {\n  return b.json.fileName.localeCompare(a.json.fileName);\n});\n\nreturn [validFiles[0]];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        -64
+      ],
+      "id": "6302081f-454f-42a3-aed3-273b80c53af1",
+      "name": "select newest file"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -272
+      ],
+      "id": "fd7e0422-2ef1-49f3-84be-8f97bfcbdbd8",
+      "name": "extract text"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "f730d763-2225-4ee5-ba41-ba2c27732c59",
+      "name": "Merge text and file name"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    $1::text AS source_file,\n    EXISTS (\n        SELECT 1\n        FROM journal_entries\n        WHERE source_file = $1\n    ) AS already_processed;",
+        "options": {
+          "queryReplacement": "={{ $json.fileName }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        128
+      ],
+      "id": "029fa3aa-9652-4d42-9d61-98eb20aaff74",
+      "name": "already proccesed?",
+      "credentials": {
+        "postgres": {
+          "id": "p9zleNqGXTUzCe0b",
+          "name": "Postgres journal tracker"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "binary name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sentiment Tracker LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentiment Tracker LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Reflection",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fix the struc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Reflection",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reflection": {
+      "main": [
+        [
+          {
+            "node": "Send it to Me.",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "fix the struc": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If not proccesed?": {
+      "main": [
+        [
+          {
+            "node": "Sentiment Tracker LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "prepare archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare archive": {
+      "main": [
+        [
+          {
+            "node": "format archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send it to Me.": {
+      "main": [
+        []
+      ]
+    },
+    "format archive": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "binary name": {
+      "main": [
+        [
+          {
+            "node": "select newest file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "select newest file": {
+      "main": [
+        [
+          {
+            "node": "Merge text and file name",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "extract text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract text": {
+      "main": [
+        [
+          {
+            "node": "Merge text and file name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge text and file name": {
+      "main": [
+        [
+          {
+            "node": "already proccesed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "already proccesed?": {
+      "main": [
+        [
+          {
+            "node": "If not proccesed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ebe520a0-abfd-41ea-a7c7-9faa20773f4c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a87e11acfdb1b49229424d961bb1da3ac015ab54126f30c1fefd91b6beb2582f"
+  },
+  "id": "ixix5TaRCTTZ9dOr",
+  "tags": []
+}
